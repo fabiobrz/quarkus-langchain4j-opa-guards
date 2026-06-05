@@ -43,7 +43,7 @@
 
         <dependency>
             <groupId>io.quarkiverse.langchain4j</groupId>
-            <artifactId>quarkus-langchain4j-openai</artifactId>
+            <artifactId>quarkus-langchain4j-ollama</artifactId>
         </dependency>
 
         <dependency>
