@@ -1,0 +1,173 @@
+name: Integration Tests with Ollama
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+env:
+  JAVA_VERSION: '21'
+  MISTRAL_MODEL: 'mistral'
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: quarkus_test
+          POSTGRES_USER: quarkus_test
+          POSTGRES_PASSWORD: quarkus_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Wait for Ollama to be ready
+        run: |
+          echo "Waiting for Ollama service to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+              echo "Ollama is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+          
+          # Verify Ollama is running
+          curl -s http://localhost:11434/api/tags || (echo "Ollama failed to start" && exit 1)
+
+      - name: Pull Mistral model
+        run: |
+          echo "Pulling Mistral model..."
+          docker exec $(docker ps -q -f ancestor=ollama/ollama:latest) ollama pull ${{ env.MISTRAL_MODEL }}
+          echo "Model pulled successfully"
+
+      - name: Verify Mistral model
+        run: |
+          echo "Verifying Mistral model is available..."
+          docker exec $(docker ps -q -f ancestor=ollama/ollama:latest) ollama list | grep -q ${{ env.MISTRAL_MODEL }} || (echo "Mistral model not found" && exit 1)
+
+      - name: Setup the MCP Weather Server application
+        run: |
+          echo "Cloning the MCP Weather Server application sources..."
+          git clone --depth 1 https://github.com/quarkusio/quarkus-workshop-langchain4j.git /tmp/workshop
+          
+          echo "Building the MCP Weather Server application..."
+          cd /tmp/workshop/section-1/step-08-mcp-server
+          ./mvnw -B clean package -DskipTests
+          
+          echo "Checking built artifacts..."
+          ls -lh target/*.jar || echo "No JAR files found"
+          
+          echo "Starting the MCP Weather Server application..."
+          java -Dquarkus.http.port=8081 -jar target/quarkus-workshop-langchain4j-08-mcp-server-1.0-SNAPSHOT-runner.jar > /tmp/mcp-server.log 2>&1 &
+          MCP_PID=$!
+          echo "MCP_PID=$MCP_PID" >> $GITHUB_ENV
+          
+          echo "Checking if process started..."
+          sleep 2
+          ps -p $MCP_PID || (echo "MCP server process died immediately" && cat /tmp/mcp-server.log && exit 1)
+          
+          # Wait for MCP server to be ready
+          echo "Waiting for the MCP server to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8081/q/health/ready > /dev/null 2>&1; then
+              echo "MCP server is ready!"
+              break
+            fi
+            if [ $i -eq 10 ] || [ $i -eq 30 ]; then
+              echo "=== MCP Server logs (attempt $i) ==="
+              cat /tmp/mcp-server.log 2>/dev/null || echo "No logs available yet"
+              echo "=================================="
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+          
+          # Verify MCP server is running
+          if ! curl -s http://localhost:8081/q/health/ready > /dev/null 2>&1; then
+            echo "MCP server failed to start. Full logs:"
+            cat /tmp/mcp-server.log
+            exit 1
+          fi
+          echo "MCP server started successfully!"
+
+      - name: Build application
+        run: |
+          echo "Building application..."
+          ./mvnw -B clean package -DskipTests
+
+      - name: Run integration tests
+        env:
+          QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://localhost:5432/quarkus_test
+          QUARKUS_DATASOURCE_USERNAME: quarkus_test
+          QUARKUS_DATASOURCE_PASSWORD: quarkus_test
+        run: |
+          echo "Running integration tests..."
+          ./mvnw verify
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Ollama Service Logs ==="
+          docker logs $(docker ps -q -f ancestor=ollama/ollama:latest) || echo "No Ollama logs found"
+          
+          echo "=== MCP Server Logs ==="
+          cat /tmp/mcp-server.log || echo "No MCP server logs found"
+          
+          echo "=== Ollama Models ==="
+          docker exec $(docker ps -q -f ancestor=ollama/ollama:latest) ollama list || echo "Could not list Ollama models"
+          
+          echo "=== Docker Containers ==="
+          docker ps -a || echo "Could not list containers"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+            /tmp/*.log
+          retention-days: 7
+
+      - name: Publish test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Integration Test Results
+          path: 'target/surefire-reports/*.xml,target/failsafe-reports/*.xml'
+          reporter: java-junit
+          fail-on-error: true
