@@ -101,6 +101,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- OPA Policy Engine -->
+        <dependency>
+            <groupId>com.styra.opa</groupId>
+            <artifactId>opa-java-wasm</artifactId>
+            <version>1.0.4</version>
+        </dependency>
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
