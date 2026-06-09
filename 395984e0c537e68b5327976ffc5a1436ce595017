@@ -26,3 +26,9 @@
 {"id":"94a9a2de-eac5-47dd-a026-306e77373500","ts":"2026-06-09T13:32:28.370Z","path":"/home/fburzigo/projects/git/fabiobrz/quarkus-langchain4j-opa-guards/pom.xml","version":"1.0.0","taskID":"e74d9905-c619-45b0-9b0c-09c9e0dfdd43"}
 {"id":"b5d34e3c-07bb-46b3-83cd-f3766031d661","ts":"2026-06-09T13:36:04.224Z","path":"/home/fburzigo/projects/git/fabiobrz/quarkus-langchain4j-opa-guards/src/main/java/dev/langchain4j/quarkus/workshop/OPAInputGuardrail.java","version":"1.0.0","taskID":"e74d9905-c619-45b0-9b0c-09c9e0dfdd43"}
 {"id":"5a74c4c5-9df8-48bc-851a-b3530449179e","ts":"2026-06-09T13:36:25.432Z","path":"/home/fburzigo/projects/git/fabiobrz/quarkus-langchain4j-opa-guards/src/main/resources/application.properties","version":"1.0.0","taskID":"e74d9905-c619-45b0-9b0c-09c9e0dfdd43"}
+
+{"id":"8b57d716-19ab-4afb-b14e-e8b50cb7e4ba","ts":"2026-06-09T10:29:33.168Z","path":"/home/fburzigo/projects/git/fabiobrz/quarkus-langchain4j-opa-guards/src/test/java/dev/langchain4j/quarkus/workshop/IntegrationTest.java","version":"1.0.0","taskID":"e74d9905-c619-45b0-9b0c-09c9e0dfdd43"}
+{"id":"fb676097-737e-440b-b143-6bf9cdc59c1c","ts":"2026-06-09T10:29:48.161Z","path":"/home/fburzigo/projects/git/fabiobrz/quarkus-langchain4j-opa-guards/src/test/java/dev/langchain4j/quarkus/workshop/IntegrationTest.java","version":"1.0.0","taskID":"e74d9905-c619-45b0-9b0c-09c9e0dfdd43"}
+
+{"id":"a178359d-2e27-4ddd-8014-1624a63bdb61","ts":"2026-06-09T14:28:28.808Z","path":"/home/fburzigo/projects/git/fabiobrz/quarkus-langchain4j-opa-guards/src/main/resources/policies/prompt-injection.rego","version":"1.0.0","taskID":"47494b4e-c8ed-4bf3-83ad-7cf2600aa843"}
+{"id":"f1d2f4e7-ec9e-42e1-bc9c-5948111fa794","ts":"2026-06-09T14:28:38.882Z","path":"/home/fburzigo/projects/git/fabiobrz/quarkus-langchain4j-opa-guards/src/test/java/dev/langchain4j/quarkus/workshop/IntegrationTest.java","version":"1.0.0","taskID":"47494b4e-c8ed-4bf3-83ad-7cf2600aa843"}
