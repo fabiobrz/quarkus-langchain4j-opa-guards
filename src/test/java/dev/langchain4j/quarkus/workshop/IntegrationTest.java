@@ -35,7 +35,7 @@ public class IntegrationTest {
     PromptInjectionDetectionService injectionDetectionService;
 
     @Inject
-    OPAInputGuardrail opaGuardrail;
+    OPAPromptInjectionGuard opaGuardrail;
 
     @Test
     public void testIndexPage() {
