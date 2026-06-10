@@ -3,14 +3,15 @@ package dev.langchain4j.quarkus.workshop;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.guardrail.InputGuardrail;
 import dev.langchain4j.guardrail.InputGuardrailResult;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class PromptInjectionGuard implements InputGuardrail {
+public class LLMPromptInjectionGuard implements InputGuardrail {
 
     private final PromptInjectionDetectionService service;
 
-    public PromptInjectionGuard(PromptInjectionDetectionService service) {
+    public LLMPromptInjectionGuard(PromptInjectionDetectionService service) {
         this.service = service;
     }
 
@@ -18,7 +19,8 @@ public class PromptInjectionGuard implements InputGuardrail {
     public InputGuardrailResult validate(UserMessage userMessage) {
         double result = service.isInjection(userMessage.singleText());
         if (result > 0.7) {
-            return failure("Prompt injection detected");
+            Log.infof("LLM guardrail - BLOCKED: prompt injection detected by LLM");
+            return failure("Prompt injection detected by LLM");
         }
         return success();
     }

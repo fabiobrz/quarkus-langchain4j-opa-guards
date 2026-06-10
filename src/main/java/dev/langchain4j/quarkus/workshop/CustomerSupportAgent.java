@@ -22,7 +22,7 @@ public interface CustomerSupportAgent {
             
             Today is {current_date}.
             """)
-    @InputGuardrails({/*PromptInjectionGuard.class,*/OPAInputGuardrail.class})
+    @InputGuardrails(CombinedPromptInjectionGuard.class)
     @ToolBox(BookingRepository.class)
     @McpToolBox("weather")
     String chat(String userMessage);
