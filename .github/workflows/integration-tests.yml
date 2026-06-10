@@ -164,7 +164,7 @@ jobs:
           retention-days: 7
 
       - name: Publish test report
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: dorny/test-reporter@v1
         with:
           name: Integration Test Results
