@@ -25,7 +25,7 @@ public class CustomerSupportAgentWebSocket {
         try {
             return customerSupportAgent.chat(message);
         } catch (InputGuardrailException e) {
-            Log.errorf(e, "Error calling the LLM: %s", e.getMessage());
+            Log.warnf(e, "Input guardrails detected a security issue: %s", e.getMessage());
             return "Sorry, I am unable to process your request at the moment. It's not something I'm allowed to do.";
         } catch (Exception e) {
             Log.errorf(e, "Error calling the LLM: %s", e.getMessage());
