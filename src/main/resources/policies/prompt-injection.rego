@@ -2,13 +2,9 @@ package promptinjection
 
 import rego.v1
 
-default injection_score := 0.0
+default pattern_score := 0.0
 
-allow := result if {
-	result := injection_score <= 0.7
-}
-
-injection_score := score if {
+pattern_score := score if {
 	input.text
 	text_lower := lower(input.text)
 
@@ -27,6 +23,22 @@ injection_score := score if {
 		{"pattern": "do as i say", "weight": 0.9},
 		{"pattern": "obey me", "weight": 0.9},
 		{"pattern": "pretend you are", "weight": 0.85},
+		{"pattern": "do anything now", "weight": 0.95},
+		{"pattern": "from now on you are", "weight": 0.9},
+		{"pattern": "you are now", "weight": 0.85},
+		{"pattern": "developer mode", "weight": 0.9},
+		{"pattern": "debug mode", "weight": 0.85},
+		{"pattern": "maintenance mode", "weight": 0.85},
+		{"pattern": "roleplay as", "weight": 0.85},
+		{"pattern": "let's play a game", "weight": 0.8},
+		{"pattern": "let's pretend", "weight": 0.8},
+		{"pattern": "bypass", "weight": 0.8},
+		{"pattern": "jailbreak", "weight": 0.95},
+		{"pattern": "ignore safety", "weight": 0.95},
+		{"pattern": "ignore restrictions", "weight": 0.95},
+		{"pattern": "no restrictions", "weight": 0.9},
+		{"pattern": "without limitations", "weight": 0.85},
+		{"pattern": "uncensored", "weight": 0.9},
 	]
 
 	regex_patterns := [
@@ -38,6 +50,10 @@ injection_score := score if {
 		{"pattern": "act\\s+as\\s+(if|though)", "weight": 0.8},
 		{"pattern": "trust\\s+me\\s+and", "weight": 0.8},
 		{"pattern": "(delete|remove|drop|cancel)\\s+all\\s+(the\\s+)?(bookings|reservations|data|records)", "weight": 0.85},
+		{"pattern": "ignore\\s+(all\\s+)?(your|the|these)\\s+(rules|guidelines|policies)", "weight": 0.95},
+		{"pattern": "you\\s+(must|should|have\\s+to)\\s+obey", "weight": 0.9},
+		{"pattern": "speak\\s+(only\\s+)?in\\s+[a-z]+\\s+(from\\s+now|going\\s+forward)", "weight": 0.8},
+		{"pattern": "(secret|hidden|special)\\s+(code|password|key|token)", "weight": 0.85},
 	]
 
 	exact_matches := [weight |
@@ -54,4 +70,15 @@ injection_score := score if {
 
 	all_matches := array.concat(exact_matches, regex_matches)
 	score := max(array.concat(all_matches, [0.0]))
+}
+
+injection_score := pattern_score if {
+	pattern_score > 0.7
+} else := llm_score(input.text) if {
+	pattern_score > 0.0
+	pattern_score <= 0.7
+} else := 0.0
+
+allow := result if {
+	result := injection_score <= 0.7
 }
