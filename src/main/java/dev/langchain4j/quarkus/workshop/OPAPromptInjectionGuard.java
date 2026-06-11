@@ -1,5 +1,7 @@
 package dev.langchain4j.quarkus.workshop;
 
+import com.fasterxml.jackson.databind.node.DoubleNode;
+import com.styra.opa.wasm.OpaBuiltin;
 import com.styra.opa.wasm.OpaPolicy;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.guardrail.InputGuardrail;
@@ -12,12 +14,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.logging.Log;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
 @ApplicationScoped
 public class OPAPromptInjectionGuard implements InputGuardrail {
@@ -28,24 +26,31 @@ public class OPAPromptInjectionGuard implements InputGuardrail {
     String policyPath;
     private OpaPolicy policy;
 
+    private final PromptInjectionDetectionService llmService;
+
+    public OPAPromptInjectionGuard(PromptInjectionDetectionService llmService) {
+        this.llmService = llmService;
+    }
+
     @PostConstruct
     public void init() {
-        try (InputStream policyStream = getClass().getResourceAsStream(policyPath)) {
-            if (policyStream == null) {
-                throw new RuntimeException("Policy file not found: " + policyPath);
-            }
-            
-            Path tempFile = Files.createTempFile("opa-policy", ".wasm");
-            Files.copy(policyStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            
-            policy = OpaPolicy.builder()
-                .withPolicy(tempFile.toFile())
-                .build();
-                
-            tempFile.toFile().deleteOnExit();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load OPA policy", e);
+        InputStream policyStream = getClass().getResourceAsStream(policyPath);
+        if (policyStream == null) {
+            throw new RuntimeException("Policy file not found: " + policyPath);
         }
+
+        policy = OpaPolicy.builder()
+            .withPolicy(policyStream)
+            .addBuiltins(
+                OpaBuiltin.from("llm_score", (instance, textNode) -> {
+                    String text = textNode.asText();
+                    Log.infof("OPA guardrail - pattern inconclusive, consulting LLM for: %.50s...", text);
+                    double score = llmService.isInjection(text);
+                    Log.infof("OPA guardrail - LLM score: %f", score);
+                    return new DoubleNode(score);
+                })
+            )
+            .build();
     }
 
     @Override
@@ -65,7 +70,7 @@ public class OPAPromptInjectionGuard implements InputGuardrail {
             Log.debugf("OPA guardrail - OPA result: %s", resultJson);
 
             if (!resultJson.contains("true")) {
-                Log.infof("OPA guardrail - BLOCKED: prompt injection detected by OPA policy");
+                Log.infof("OPA guardrail - BLOCKED: prompt injection detected");
                 return failure("Prompt injection detected by OPA policy");
             }
             return success();

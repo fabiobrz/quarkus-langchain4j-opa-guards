@@ -48,7 +48,7 @@ public class ChatTest {
 
     @Test
     @Timeout(value = 180, unit = TimeUnit.SECONDS)
-    public void testLlmBlocksUnknownInjection() throws Exception {
+    public void testOpaEscalatesToLlmForUnknownInjection() throws Exception {
         var messages = new LinkedBlockingDeque<String>();
         WebSocketClientConnection conn = connect(messages);
         try {
@@ -61,7 +61,7 @@ public class ChatTest {
 
             assertNotNull(response, "Should receive a response");
             assertTrue(response.contains("not something I'm allowed to do"),
-                    "LLM guard should block injection attack, got: " + response);
+                    "OPA policy (via LLM builtin) should block injection attack, got: " + response);
         } finally {
             conn.closeAndAwait();
         }
