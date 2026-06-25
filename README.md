@@ -36,13 +36,13 @@ User Input
 │            OPA Wasm Policy (342 KB)                 │
 │                                                     │
 │  1. Pattern matching (30 exact + 12 regex rules)    │
-│     ├─ score > 0.7  ──►  BLOCKED     (< 1ms, $0)   │
-│     ├─ score = 0.0  ──►  ALLOWED     (< 1ms, $0)   │
-│     └─ 0 < score ≤ 0.7                             │
+│     ├─ score > 0.7  ──►  BLOCKED     (< 1ms, $0)    │
+│     ├─ score = 0.0  ──►  ALLOWED     (< 1ms, $0)    │
+│     └─ 0 < score ≤ 0.7                              │
 │          │                                          │
 │  2.      └─► llm_score() custom builtin             │
 │               │    OPA calls the LLM as a           │
-│               │    data source, not a guardrail      │
+│               │    data source, not a guardrail     │
 │               ▼                                     │
 │          OPA makes the final decision               │
 └─────────────────────────────────────────────────────┘
