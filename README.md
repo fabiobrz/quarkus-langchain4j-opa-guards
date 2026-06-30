@@ -58,7 +58,7 @@ Rego policy encodes the full decision logic, including when to escalate to the L
 ### How Custom Builtins Work
 
 The [Styra OPA Java Wasm SDK](https://github.com/StyraOSS/opa-java-wasm) (powered by 
-[Chicory](https://github.com/dylibso/chicory), a pure-Java Wasm runtime) lets you register 
+[Endive](https://github.com/bytecodealliance/endive), a pure-Java Wasm runtime) lets you register 
 Java functions as OPA builtins. In the Rego policy, `llm_score(input.text)` looks like 
 any other built-in function. At runtime, it calls the LLM service:
 
