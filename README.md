@@ -14,13 +14,13 @@ policies compiled to [WebAssembly](https://webassembly.org/), integrated with
 
 LLM-based guardrails work, but they come with costs:
 
-| | LLM-only guardrail | Wasm guardrail |
-|---|---|---|
-| **Latency** | 3-10 seconds per check | Sub-millisecond |
-| **Cost** | ~$0.003 per call | $0 |
-| **Determinism** | Probabilistic — same input can get different results | Deterministic — same input, same result, every time |
-| **Auditability** | Black box | Policy is a readable Rego file, version-controlled |
-| **Dependencies** | Requires LLM API availability | Self-contained binary, runs anywhere |
+|                  | LLM-only guardrail                                   | Wasm guardrail                                      | Hybrid (Wasm delegating to LLM)                                                                 |
+|------------------|------------------------------------------------------|-----------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| **Latency**      | Varies by model and deployment                       | Sub-millisecond                                     | Varies by model and deployment, commonly seconds when falling back to LLM-based validation      |
+| **Cost**         | Per-call token costs                                 | $0                                                  | Per-call token costs when falling back to LLM-based validation                                  |
+| **Determinism**  | Probabilistic — same input can get different results | Deterministic — same input, same result, every time | Probabilistic -- same input can get different results when falling back to LLM-based validation |
+| **Auditability** | Black box                                            | Policy is a readable Rego file, version-controlled  | Mixed, black box for LLM-based validation and auditable for Wasm                                |
+| **Dependencies** | Requires LLM API availability                        | Self-contained binary, runs anywhere                | Requires LLM API availability when falling back to LLM-based validation                         |
 
 The insight: **most prompt injection attacks follow known patterns**. A Wasm policy 
 catches them instantly. For the long tail of novel attacks, the policy itself decides 
