@@ -15,6 +15,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import io.quarkus.logging.Log;
 
 import java.io.InputStream;
+import java.io.StringReader;
 import java.io.StringWriter;
 
 @ApplicationScoped
@@ -69,7 +70,12 @@ public class OPAPromptInjectionGuard implements InputGuardrail {
             String resultJson = policy.evaluate(input);
             Log.debugf("OPA guardrail - OPA result: %s", resultJson);
 
-            if (!resultJson.contains("true")) {
+            boolean allowed = Json.createReader(new StringReader(resultJson))
+                    .readArray()
+                    .getJsonObject(0)
+                    .getBoolean("result", false);
+
+            if (!allowed) {
                 Log.infof("OPA guardrail - BLOCKED: prompt injection detected");
                 return failure("Prompt injection detected by OPA policy");
             }

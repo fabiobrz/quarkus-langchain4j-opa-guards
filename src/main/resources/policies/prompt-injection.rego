@@ -68,7 +68,40 @@ pattern_score := score if {
 		weight := p.weight
 	]
 
-	all_matches := array.concat(exact_matches, regex_matches)
+	suspicious_words := [
+		{"word": "password", "weight": 0.4},
+		{"word": "admin", "weight": 0.4},
+		{"word": "secret", "weight": 0.4},
+		{"word": "credentials", "weight": 0.4},
+		{"word": "token", "weight": 0.4},
+		{"word": "api key", "weight": 0.4},
+		{"word": "database", "weight": 0.3},
+		{"word": "hack", "weight": 0.5},
+		{"word": "exploit", "weight": 0.5},
+		{"word": "vulnerability", "weight": 0.4},
+		{"word": "root access", "weight": 0.5},
+		{"word": "sudo", "weight": 0.4},
+		{"word": "ssh", "weight": 0.3},
+		{"word": "confidential", "weight": 0.3},
+		{"word": "classified", "weight": 0.3},
+		{"word": "all customer", "weight": 0.4},
+		{"word": "all user", "weight": 0.4},
+		{"word": "show me all", "weight": 0.3},
+		{"word": "give me all", "weight": 0.3},
+		{"word": "dump", "weight": 0.4},
+		{"word": "exfiltrate", "weight": 0.5},
+		{"word": "all instructions above", "weight": 0.5},
+		{"word": "different assistant", "weight": 0.5},
+		{"word": "tell me the", "weight": 0.3},
+	]
+
+	suspicious_matches := [weight |
+		w := suspicious_words[_]
+		contains(text_lower, w.word)
+		weight := w.weight
+	]
+
+	all_matches := array.concat(array.concat(exact_matches, regex_matches), suspicious_matches)
 	score := max(array.concat(all_matches, [0.0]))
 }
 
