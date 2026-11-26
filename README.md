@@ -105,6 +105,11 @@ switched off explicitly:
 Note that a guardrail that *throws* also blocks the request, so a broken escalation path looks exactly like a
 working one. `Exceptions.OpaEvaluationException` keeps the two apart.
 
+Relatedly, the scoring reply is always *text* — binding the AI method straight to `double` means LangChain4j
+hands it to `Double.parseDouble`, and one explanatory sentence takes the whole policy evaluation down.
+`PromptInjectionDetectionService.rawScore()` therefore returns `String`, and the `isInjection()` default method
+pulls the first number out of it.
+
 ## Demo
 
 Start the application (`./mvnw quarkus:dev`) and open http://localhost:8080.
