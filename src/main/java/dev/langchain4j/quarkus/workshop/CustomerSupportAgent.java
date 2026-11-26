@@ -5,6 +5,7 @@ import io.quarkiverse.langchain4j.mcp.runtime.McpToolBox;
 import jakarta.enterprise.context.SessionScoped;
 
 import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
 import io.quarkiverse.langchain4j.RegisterAiService;
 import io.quarkiverse.langchain4j.ToolBox;
 
@@ -22,6 +23,9 @@ public interface CustomerSupportAgent {
             
             Today is {current_date}.
             """)
+    // The explicit @UserMessage template is what lets OPAPromptInjectionGuard recover the raw user input:
+    // Quarkus exposes the template variables to guardrails, and input guardrails run *after* RAG augmentation.
+    @UserMessage("{userMessage}")
     @InputGuardrails(OPAPromptInjectionGuard.class)
     @ToolBox(BookingRepository.class)
     @McpToolBox("weather")

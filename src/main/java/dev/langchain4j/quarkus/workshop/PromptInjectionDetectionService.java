@@ -5,7 +5,15 @@ import dev.langchain4j.service.UserMessage;
 import io.quarkiverse.langchain4j.RegisterAiService;
 import jakarta.enterprise.context.ApplicationScoped;
 
-@RegisterAiService
+/**
+ * Scores a user query for prompt-injection likelihood.
+ * <p>
+ * {@code retrievalAugmentor = NoRetrievalAugmentorSupplier.class} is essential: by default Quarkus applies the
+ * single {@link dev.langchain4j.rag.RetrievalAugmentor} CDI bean (see {@code RagRetriever}) to <em>every</em>
+ * AI service. Without this, the car-rental terms-of-use chunks get appended to the scoring prompt below, which
+ * both distracts the model from the "only a single floating point number" instruction and biases its judgement.
+ */
+@RegisterAiService(retrievalAugmentor = RegisterAiService.NoRetrievalAugmentorSupplier.class)
 @ApplicationScoped
 public interface PromptInjectionDetectionService {
 
