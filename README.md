@@ -85,6 +85,31 @@ injection_score := pattern_score if {
 } else := 0.0                       # no signals at all — allow, skip LLM
 ```
 
+### Keeping RAG out of the guardrail
+
+Two Quarkus LangChain4j behaviours interact badly with a guardrail that consults an LLM, and both have to be
+switched off explicitly:
+
+1. **The `RetrievalAugmentor` CDI bean applies to _every_ AI service.** `RagRetriever` produces one for the
+   customer-support agent, but by default `PromptInjectionDetectionService` gets it too — so the car-rental terms of
+   use end up appended to the *security scoring prompt*. The model then stops answering with a bare float (breaking
+   `double` parsing) and rates obvious attacks as harmless because "the context seems to be about the booking
+   policy". Fixed with
+   `@RegisterAiService(retrievalAugmentor = RegisterAiService.NoRetrievalAugmentorSupplier.class)`.
+
+2. **Input guardrails run _after_ retrieval augmentation.** So `request.userMessage()` is the user's text *plus* the
+   retrieved chunks, and that is what the policy would pattern-match and send to `llm_score()`. `OPAPromptInjectionGuard`
+   therefore reads the raw `userMessage` template variable from `request.requestParams().variables()` — which is
+   why `CustomerSupportAgent.chat()` carries an explicit `@UserMessage("{userMessage}")`.
+
+Note that a guardrail that *throws* also blocks the request, so a broken escalation path looks exactly like a
+working one. `Exceptions.OpaEvaluationException` keeps the two apart.
+
+Relatedly, the scoring reply is always *text* — binding the AI method straight to `double` means LangChain4j
+hands it to `Double.parseDouble`, and one explanatory sentence takes the whole policy evaluation down.
+`PromptInjectionDetectionService.rawScore()` therefore returns `String`, and the `isInjection()` default method
+pulls the first number out of it.
+
 ## Demo
 
 Start the application (`./mvnw quarkus:dev`) and open http://localhost:8080.

@@ -18,4 +18,15 @@ public class Exceptions {
             super("Booking " + bookingId + " not found");
         }
     }
+
+    /**
+     * Raised when the OPA policy could not be evaluated at all (bad input, Wasm failure, or the {@code llm_score()}
+     * builtin blowing up). Distinct from a policy <em>denial</em> so that an infrastructure problem is never
+     * reported to the user as "prompt injection detected".
+     */
+    public static class OpaEvaluationException extends RuntimeException {
+        public OpaEvaluationException(Throwable cause) {
+            super("Failed to evaluate OPA policy", cause);
+        }
+    }
 }

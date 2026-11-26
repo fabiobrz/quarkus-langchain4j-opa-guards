@@ -5,6 +5,7 @@ import com.styra.opa.wasm.OpaBuiltin;
 import com.styra.opa.wasm.OpaPolicy;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.guardrail.InputGuardrail;
+import dev.langchain4j.guardrail.InputGuardrailRequest;
 import dev.langchain4j.guardrail.InputGuardrailResult;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -22,6 +23,9 @@ import java.io.StringWriter;
 public class OPAPromptInjectionGuard implements InputGuardrail {
 
     public static final String POLICIES_PROMPT_INJECTION_WASM_PATH = "/policies/prompt-injection.wasm";
+
+    /** Name of the {@code @UserMessage} template variable on {@link CustomerSupportAgent#chat(String)}. */
+    private static final String USER_MESSAGE_VARIABLE = "userMessage";
 
     @ConfigProperty(name = "opa.policy.path", defaultValue = POLICIES_PROMPT_INJECTION_WASM_PATH)
     String policyPath;
@@ -54,11 +58,29 @@ public class OPAPromptInjectionGuard implements InputGuardrail {
             .build();
     }
 
+    /**
+     * Quarkus runs input guardrails <em>after</em> RAG augmentation, so {@code request.userMessage()} already has the
+     * retrieved terms-of-use chunks appended to it. The policy must see what the user actually typed, so we read the
+     * raw {@code userMessage} template variable and only fall back to the augmented message if it is unavailable.
+     */
+    @Override
+    public InputGuardrailResult validate(InputGuardrailRequest request) {
+        Object rawUserMessage = request.requestParams().variables().get(USER_MESSAGE_VARIABLE);
+        if (rawUserMessage instanceof String text && !text.isBlank()) {
+            return validateText(text);
+        }
+        Log.warnf("OPA guardrail - no '%s' template variable found, falling back to the augmented user message",
+                USER_MESSAGE_VARIABLE);
+        return validateText(request.userMessage().singleText());
+    }
+
     @Override
     public InputGuardrailResult validate(UserMessage userMessage) {
-        try {
-            String userText = userMessage.singleText();
+        return validateText(userMessage.singleText());
+    }
 
+    private InputGuardrailResult validateText(String userText) {
+        try {
             JsonObject inputObj = Json.createObjectBuilder()
                     .add("text", userText)
                     .build();
@@ -81,7 +103,7 @@ public class OPAPromptInjectionGuard implements InputGuardrail {
             }
             return success();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to evaluate OPA policy", e);
+            throw new Exceptions.OpaEvaluationException(e);
         }
     }
 }
